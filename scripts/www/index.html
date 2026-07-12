@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>我的文档</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            height: 100%;
+        }
+        body {
+            background-color: #f0f0f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+            padding: 20px;
+            padding-top: calc(20px + env(safe-area-inset-top));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            min-height: 100%;
+            min-height: 100dvh;
+        }
+        .toolbar-wrapper {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            margin: -20px -20px 15px;
+            padding: 12px 20px 8px;
+            padding-top: calc(12px + env(safe-area-inset-top));
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toolbar-row {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .toolbar-row.no-wrap {
+            flex-wrap: nowrap;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 150px;
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+            padding: 9.4px 0;
+        }
+        .search-box input {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            outline: none;
+            padding: 0 12px;
+            font-size: 14px;
+            background: transparent;
+        }
+        .search-count {
+            padding: 0 10px;
+            font-size: 13px;
+            color: #888;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 50px;
+            text-align: right;
+        }
+        .save-btn {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .save-btn:active {
+            background: #eee;
+        }
+        .save-status {
+            font-size: 12px;
+            color: #888;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 60px;
+            text-align: right;
+        }
+        .toolbar-row button {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .toolbar-row button:active {
+            background: #e8e8e8;
+        }
+        .toolbar-row button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .toolbar-right {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .document {
+            max-width: 800px;
+            min-height: calc(100dvh - 80px);
+            min-height: calc(100% - 80px);
+            margin: 0 auto;
+            background: white;
+            padding: 60px 80px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            outline: none;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #333;
+        }
+        .document:empty:before {
+            content: '在这里开始输入吧...';
+            color: #bbb;
+        }
+        .document mark {
+            background-color: #ffe066;
+            border-radius: 2px;
+            padding: 0 2px;
+        }
+        .document mark.current {
+            background-color: #ff9500;
+            color: white;
+        }
+        .back-to-top {
+            position: fixed;
+            right: 24px;
+            bottom: calc(24px + env(safe-area-inset-bottom));
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            -webkit-tap-highlight-color: transparent;
+            z-index: 1000;
+        }
+        .back-to-top.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .back-to-top:active {
+            background: #f0f0f0;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+                padding-top: calc(12px + env(safe-area-inset-top));
+                padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            }
+            .toolbar-wrapper {
+                margin: -12px -12px 12px;
+                padding: 10px 12px;
+                padding-top: calc(10px + env(safe-area-inset-top));
+            }
+            .document {
+                padding: 30px 20px;
+                min-height: calc(100dvh - 140px);
+            }
+            .search-box {
+                flex-basis: 100%;
+                min-width: 0;
+            }
+            .toolbar-row button {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+            .save-status {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar-wrapper">
+        <div class="toolbar-row no-wrap">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索文档内容..." oninput="handleSearch(this.value)">
+                <span class="search-count" id="searchCount"></span>
+            </div>
+            <button id="manualSaveBtn" onclick="manualSave()" class="save-btn">保存</button>
+        </div>
+        <div class="toolbar-row">
+            <button id="prevBtn" onclick="prevMatch()" disabled>上一个</button>
+            <button id="nextBtn" onclick="nextMatch()" disabled>下一个</button>
+            <div class="toolbar-right">
+                <button id="undoBtn" onclick="undo()" disabled>撤销</button>
+                <button id="redoBtn" onclick="redo()" disabled>恢复</button>
+                <span class="save-status" id="saveStatus">已保存</span>
+            </div>
+        </div>
+    </div>
+    <div class="document" id="editor" contenteditable="true"></div>
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</button>
+
+    <script>
+        const STORAGE_KEY = 'my_document_content';
+
+        const Storage = {
+            _memoryCache: {},
+
+            _isLocalStorageAvailable() {
+                try {
+                    const testKey = '__storage_test__';
+                    localStorage.setItem(testKey, testKey);
+                    localStorage.removeItem(testKey);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            },
+
+            get(key) {
+                try {
+                    if (this._isLocalStorageAvailable()) {
+                        return localStorage.getItem(key);
+                    }
+                } catch (e) {
+                    console.warn('localStorage 读取失败，使用内存存储', e);
+                }
+                return this._memoryCache[key] || null;
+            },
+
+            set(key, value) {
+                try {
+                    if (this._isLocalStorageAvailable()) {
+                        localStorage.setItem(key, value);
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('localStorage 写入失败，使用内存存储', e);
+                }
+                this._memoryCache[key] = value;
+                return false;
+            },
+
+            remove(key) {
+                try {
+                    if (this._isLocalStorageAvailable()) {
+                        localStorage.removeItem(key);
+                    }
+                } catch (e) {
+                    console.warn('localStorage 删除失败', e);
+                }
+                delete this._memoryCache[key];
+            }
+        };
+
+        const editor = document.getElementById('editor');
+        const saveStatus = document.getElementById('saveStatus');
+        const searchInput = document.getElementById('searchInput');
+        const searchCount = document.getElementById('searchCount');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+
+        let currentMatchIndex = -1;
+        let matches = [];
+        let isSearching = false;
+
+        // 撤销/重做历史栈
+        let historyStack = [];
+        let redoStack = [];
+        let isUndoRedoing = false;
+        let lastHistoryState = '';
+        let historyTimer = null;
+
+        function getCleanHTMLForHistory() {
+            return isSearching ? getCleanHTML() : editor.innerHTML;
+        }
+
+        function recordHistory() {
+            if (isUndoRedoing) return;
+            if (historyTimer) clearTimeout(historyTimer);
+            historyTimer = setTimeout(() => {
+                const current = getCleanHTMLForHistory();
+                if (current !== lastHistoryState) {
+                    historyStack.push(lastHistoryState);
+                    if (historyStack.length > 50) historyStack.shift();
+                    redoStack = [];
+                    lastHistoryState = current;
+                    updateUndoRedoButtons();
+                }
+            }, 500);
+        }
+
+        function updateUndoRedoButtons() {
+            undoBtn.disabled = historyStack.length === 0;
+            redoBtn.disabled = redoStack.length === 0;
+        }
+
+        function clearSearchState() {
+            if (isSearching) {
+                clearHighlights();
+                searchInput.value = '';
+                searchCount.textContent = '';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+            }
+        }
+
+        function undo() {
+            if (historyStack.length === 0) return;
+            const keyword = isSearching ? searchInput.value.trim() : '';
+            if (keyword) clearHighlights();
+            const current = keyword ? getCleanHTMLForHistory() : editor.innerHTML;
+            redoStack.push(current);
+            const prev = historyStack.pop();
+            isUndoRedoing = true;
+            editor.innerHTML = prev;
+            lastHistoryState = prev;
+            isUndoRedoing = false;
+            saveContent();
+            updateUndoRedoButtons();
+            if (keyword) handleSearch(keyword, false);
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+            const keyword = isSearching ? searchInput.value.trim() : '';
+            if (keyword) clearHighlights();
+            const current = keyword ? getCleanHTMLForHistory() : editor.innerHTML;
+            historyStack.push(current);
+            const next = redoStack.pop();
+            isUndoRedoing = true;
+            editor.innerHTML = next;
+            lastHistoryState = next;
+            isUndoRedoing = false;
+            saveContent();
+            updateUndoRedoButtons();
+            if (keyword) handleSearch(keyword, false);
+        }
+
+        function manualSave() {
+            clearSearchState();
+            const html = getCleanHTMLForHistory();
+            const ok = Storage.set(STORAGE_KEY, html);
+            saveStatus.textContent = ok ? '已保存' : '内存中（刷新会丢失）';
+            // 清除撤销/重做历史
+            historyStack = [];
+            redoStack = [];
+            lastHistoryState = editor.innerHTML;
+            updateUndoRedoButtons();
+        }
+
+        function loadContent() {
+            const saved = Storage.get(STORAGE_KEY);
+            if (saved) {
+                editor.innerHTML = saved;
+            }
+        }
+
+        let saveTimer;
+        function getCleanHTML() {
+            const clone = editor.cloneNode(true);
+            clone.querySelectorAll('mark').forEach(mark => {
+                const text = document.createTextNode(mark.textContent);
+                mark.parentNode.replaceChild(text, mark);
+            });
+            return clone.innerHTML;
+        }
+
+        function saveContent() {
+            saveStatus.textContent = '保存中...';
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+                const html = isSearching ? getCleanHTML() : editor.innerHTML;
+                const ok = Storage.set(STORAGE_KEY, html);
+                saveStatus.textContent = ok ? '已保存' : '内存中（刷新会丢失）';
+            }, 500);
+        }
+
+        function clearHighlights() {
+            const marks = editor.querySelectorAll('mark');
+            marks.forEach(mark => {
+                const parent = mark.parentNode;
+                parent.replaceChild(document.createTextNode(mark.textContent), mark);
+                parent.normalize();
+            });
+            matches = [];
+            currentMatchIndex = -1;
+            isSearching = false;
+        }
+
+        function highlightText(node, keyword) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent;
+                const lowerText = text.toLowerCase();
+                const lowerKeyword = keyword.toLowerCase();
+                const indices = [];
+                let index = lowerText.indexOf(lowerKeyword);
+                while (index !== -1) {
+                    indices.push(index);
+                    index = lowerText.indexOf(lowerKeyword, index + 1);
+                }
+                if (indices.length === 0) return 0;
+
+                const parent = node.parentNode;
+                const fragment = document.createDocumentFragment();
+                let lastIndex = 0;
+
+                indices.forEach(idx => {
+                    fragment.appendChild(document.createTextNode(text.slice(lastIndex, idx)));
+                    const mark = document.createElement('mark');
+                    mark.textContent = text.slice(idx, idx + keyword.length);
+                    fragment.appendChild(mark);
+                    lastIndex = idx + keyword.length;
+                });
+                fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+                parent.replaceChild(fragment, node);
+                return indices.length;
+            } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'MARK') {
+                let count = 0;
+                const children = Array.from(node.childNodes);
+                children.forEach(child => {
+                    count += highlightText(child, keyword);
+                });
+                return count;
+            }
+            return 0;
+        }
+
+        function handleSearch(keyword, shouldScroll = true) {
+            clearHighlights();
+            keyword = keyword.trim();
+
+            if (!keyword) {
+                searchCount.textContent = '';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                saveContent();
+                return;
+            }
+
+            isSearching = true;
+            const totalCount = highlightText(editor, keyword);
+            matches = Array.from(editor.querySelectorAll('mark'));
+            searchCount.textContent = totalCount > 0 ? `0/${totalCount}` : '未找到';
+            prevBtn.disabled = totalCount === 0;
+            nextBtn.disabled = totalCount === 0;
+
+            if (totalCount > 0) {
+                currentMatchIndex = 0;
+                updateCurrentMatch(shouldScroll);
+            }
+        }
+
+        function updateCurrentMatch(shouldScroll = true) {
+            matches.forEach((m, i) => {
+                m.classList.toggle('current', i === currentMatchIndex);
+            });
+            if (matches[currentMatchIndex] && shouldScroll) {
+                matches[currentMatchIndex].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+            searchCount.textContent = `${currentMatchIndex + 1}/${matches.length}`;
+        }
+
+        function nextMatch() {
+            if (matches.length === 0) return;
+            currentMatchIndex = (currentMatchIndex + 1) % matches.length;
+            updateCurrentMatch();
+        }
+
+        function prevMatch() {
+            if (matches.length === 0) return;
+            currentMatchIndex = (currentMatchIndex - 1 + matches.length) % matches.length;
+            updateCurrentMatch();
+        }
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    prevMatch();
+                } else {
+                    nextMatch();
+                }
+            }
+        });
+
+        editor.addEventListener('input', () => {
+            recordHistory();
+            saveContent();
+        });
+
+        setInterval(saveContent, 5000);
+
+        const backToTopBtn = document.getElementById('backToTop');
+
+        function toggleBackToTop() {
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.add('show');
+            } else {
+                backToTopBtn.classList.remove('show');
+            }
+        }
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        window.addEventListener('scroll', toggleBackToTop);
+
+        loadContent();
+        lastHistoryState = editor.innerHTML;
+
+        // 快捷键：Ctrl+Z 撤销，Ctrl+Y / Ctrl+Shift+Z 重做
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+            }
+        });
+    </script>
+</body>
+</html>
